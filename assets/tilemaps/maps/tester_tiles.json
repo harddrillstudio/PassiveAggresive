@@ -1,0 +1,14 @@
+{ "columns":28,
+ "image":"..\/tiles\/catastrophi_tiles_16.png",
+ "imageheight":80,
+ "imagewidth":448,
+ "margin":0,
+ "name":"tester_tiles",
+ "spacing":0,
+ "tilecount":140,
+ "tiledversion":"1.2.4",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":1.2
+}
