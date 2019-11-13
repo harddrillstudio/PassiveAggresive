@@ -1,5 +1,5 @@
 
-class Player extends Phaser.GameObjects.Sprite {
+class Enemy extends Phaser.GameObjects.Sprite {
 
 
     constructor(scene, x=16, y=16) {
