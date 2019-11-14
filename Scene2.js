@@ -1,5 +1,3 @@
-var cursors;
-
 var unit = 16;
 
 class Scene2 extends Phaser.Scene {
@@ -12,6 +10,7 @@ class Scene2 extends Phaser.Scene {
         this.objSpawn, this.objInter, this.objTelep; // Objects from object layers
         this.player;
         this.enemy;
+        this.mapName = 'map1';
     }
 
 
@@ -33,7 +32,7 @@ class Scene2 extends Phaser.Scene {
         this.add.text(20, 20, "Playing game", {font: "25px Arial", fill: "yellow"});
 
         // Map
-        this.makeMap('map1');
+        this.makeMap(this.mapName);
 
         // Tiles
         this.tiles = this.map.addTilesetImage('tester_tiles');
@@ -117,10 +116,20 @@ class Scene2 extends Phaser.Scene {
         }
 
         // check teleports
-        if (this.player.x == this.map.getObjectLayer('teleport').objects[0].x && this.player.y == this.map.getObjectLayer('teleport').objects[0].y) {
-            console.log("TP MAP");
-            this.teleport('map1', 'map2');
+        let teleports = this.map.filterObjects("teleport", this.tileObjectIsTeleport);
+
+        for (const tp of teleports) {
+            if (this.player.x == tp.x && this.player.y == tp.y) {
+                console.log("TP MAP", this.mapName, "--->", tp.properties[0].value);
+                this.teleport(this.mapName, tp.properties[0].value);
+            }
         }
+
+    }
+
+    // callback
+    tileObjectIsTeleport(obj) {
+        return obj.properties[0].name === "tp";
     }
 
 
@@ -160,12 +169,27 @@ class Scene2 extends Phaser.Scene {
         this.map = this.make.tilemap({ key: name });
     }
 
-    teleport(outMap, inMap) {
+    teleport(fromMapName, intoMapName) {
         this.map.destroy();
-        this.makeMap('map2');
+        this.player.destroy();
+        this.makeMap(intoMapName);
+        this.mapName = intoMapName;
         this.player.x = this.map.getObjectLayer('spawn').objects[0].x;
         this.player.y = this.map.getObjectLayer('spawn').objects[0].y;
 
+        // Layers
+        this.layerFloor = this.map.createStaticLayer('floor', this.tiles);
+        this.layerWalls = this.map.createStaticLayer('walls', this.tiles);
+
+        // Player
+        console.log(fromMapName);
+        let spawnPoint = this.map.findObject("spawn", obj => obj.properties[0].value == fromMapName);
+        this.player = new Player(this, spawnPoint.x, spawnPoint.y);
+        this.add.existing(this.player);
+
+        // Camera
+        this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+        this.cameras.main.startFollow(this.player);
     }
 
 }
