@@ -1,6 +1,7 @@
 import * as Phaser from "phaser"
 import { Player } from "../Player";
 import { Enemy } from "../Enemy";
+import { EnemiesManager } from "./EnemiesManager";
 
 var unit = 16;
 
@@ -12,7 +13,8 @@ export class Game extends Phaser.Scene {
     layerFloor: any; layerWalls: any
     objSpawn: any; objInter: any; objTelep: any
     player: any
-    enemy: any
+    // enemy: any
+    enemiesManager: any
 
     init() {
         console.log("[03] Initializing game")
@@ -64,21 +66,31 @@ export class Game extends Phaser.Scene {
         this.add.existing(this.player)
 
         // Enemy
-        this.enemy = new Enemy(this, 64, 32)
-        this.add.existing(this.enemy)
+        // this.enemy = new Enemy(this, 64, 32)
+        // this.add.existing(this.enemy)
+
+        this.enemiesManager = new EnemiesManager(this)
+        this.enemiesManager.createEnemies()
+        
+        // this.enemies = [new Enemy(this, 32, 32), new Enemy(this, 64, 64)]
+        // this.createEnemies(this.enemies)
 
         // Camera
         this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels)
-        this.cameras.main.startFollow(this.player)
+        this.cameras.main.startFollow(this.player).setZoom(2);
 
         // Input
         this.input.keyboard.on('keydown', this.onKeyInput, this)
+
+        this.debug()
     }
 
 
     onKeyInput(event:any) {
         let nextThing;
-
+        // check nextThing, which player steps into
+        // if there is something, then hit it
+        // if there isn't thing and not collision, then walk
         if(event.code === "ArrowUp") {
             nextThing = this.checkEntity(this.player.x, this.player.y - unit)
 
@@ -118,9 +130,12 @@ export class Game extends Phaser.Scene {
         console.log("x:",this.player.x, "y:",this.player.y)
         this.events.emit('moved')
 
+        console.log(this.enemiesManager.enemies)
+
         // check player life
         if (this.player.health <= 0) {
             this.player.alive = false
+            this.scene.stop()
         }
 
         // check teleports
@@ -148,21 +163,38 @@ export class Game extends Phaser.Scene {
 
     hit(attacker:any, victim:any) {
         console.log("HIT!")
-        this.enemy.health--
-        if (this.enemy.health <= 0) {
-            this.enemy.destroy()
-            this.enemy = null
+        // this.enemy.health--
+        // if (this.enemy.health <= 0) {
+        //     this.enemy.destroy()
+        //     this.enemy = null
+        // }
+        victim.health--
+        if (victim.health <= 0) {
+            this.enemiesManager.removeEnemy(victim)
+            victim.destroy()
+            victim = null
         }
     }
 
 
     checkEntity(x:number, y:number) {
-        if (this.enemy == null) {
-            return null
-        }
-        if (this.enemy.x == x && this.enemy.y == y) {
-            return this.enemy
-        }
+        // if (this.enemy == null) {
+        //     return null
+        // }
+        // if (this.enemy.x == x && this.enemy.y == y) {
+        //     return this.enemy
+        // }
+
+        return this.enemiesManager.getEnemyAt(x, y)
+
+        // for (let enemy of this.enemies) {
+        //     if (enemy == null) {
+        //         return null
+        //     }
+        //     if (enemy.x == x && enemy.y == y) {
+        //         return enemy
+        //     }
+        // }
     }
 
 
@@ -208,10 +240,19 @@ export class Game extends Phaser.Scene {
         this.player = new Player(this, spawnPoint.x, spawnPoint.y)
         this.add.existing(this.player)
 
+        // Enemies
+        // this.enemies = [new Enemy(this, 32, 32), new Enemy(this, 64, 64)]
+        // this.createEnemies(this.enemies)
+
         // Camera
         this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels)
         this.cameras.main.startFollow(this.player)
     }
 
 
+    
+
+
+    debug() {
+    }
 }
