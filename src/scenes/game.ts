@@ -1,19 +1,20 @@
 import * as Phaser from "phaser"
-import { Player } from "../Player";
-import { Enemy } from "../Enemy";
-import { EnemiesManager } from "./EnemiesManager";
+import { Player } from "../entities/Player"
+import { Enemy } from "../entities/Enemy"
+import { EnemiesManager } from "../entities/EnemiesManager"
+import { MapManager } from "../maps/MapManager"
 
 var unit = 16;
 
 export class Game extends Phaser.Scene {
 
-    map: any // Map
-    mapName = 'green_road'
-    tiles: any
-    layerFloor: any; layerWalls: any
-    objSpawn: any; objInter: any; objTelep: any
+    // map: any
+    mapManager: MapManager
+    // mapName = 'green_road'
+    // tiles: any
+    // layerFloor: any; layerWalls: any
+    // objSpawn: any; objInter: any; objTelep: any
     player: any
-    // enemy: any
     enemiesManager: any
 
     init() {
@@ -41,42 +42,39 @@ export class Game extends Phaser.Scene {
         this.add.text(20, 20, "Playing game", {font: "25px Arial", fill: "yellow"})
 
         // Map
-        this.makeMap(this.mapName)
+        // this.makeMap(this.mapName)
+        this.mapManager = new MapManager(this)
         console.log("[04] Map created")
 
         // Tiles
-        this.tiles = this.map.addTilesetImage('tileset_tiled', 'tiles')
+        // this.tiles = this.map.addTilesetImage('tileset_tiled', 'tiles')
 
         // Layers
-        this.layerFloor = this.map.createStaticLayer('floor', this.tiles)
-        this.layerWalls = this.map.createStaticLayer('walls', this.tiles)
+        // this.layerFloor = this.map.createStaticLayer('floor', this.tiles)
+        // this.layerWalls = this.map.createStaticLayer('walls', this.tiles)
 
         // Objects from object layers
-        this.objInter = this.map.createFromObjects('interact', 52, {key: "player"})
-        this.objSpawn = this.map.getObjectLayer('spawn')
-        this.objTelep = this.map.getObjectLayer('teleport')
-
-        let spawnPoint = this.map.findObject("spawn", this.isSpawnOrigin)
-        if (spawnPoint == null) {
-            spawnPoint = this.map.findObject("spawn", (obj: any) => obj.properties[0].type == "sp")
-        }
+        // this.objInter = this.map.createFromObjects('interact', 52, {key: "player"})
+        // this.objSpawn = this.map.getObjectLayer('spawn')
+        // this.objTelep = this.map.getObjectLayer('teleport')
+        
+        let spawnPoint = this.mapManager.getSpawnPoint()
+        
+        // let spawnPoint = this.map.findObject("spawn", this.isSpawnOrigin)
+        // if (spawnPoint == null) {
+        //     spawnPoint = this.map.findObject("spawn", (obj: any) => obj.properties[0].type == "sp")
+        // }
 
         // Player
         this.player = new Player(this, spawnPoint.x, spawnPoint.y)
         this.add.existing(this.player)
 
         // Enemy
-        // this.enemy = new Enemy(this, 64, 32)
-        // this.add.existing(this.enemy)
-
         this.enemiesManager = new EnemiesManager(this)
         this.enemiesManager.createEnemies()
-        
-        // this.enemies = [new Enemy(this, 32, 32), new Enemy(this, 64, 64)]
-        // this.createEnemies(this.enemies)
 
         // Camera
-        this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels)
+        this.cameras.main.setBounds(0, 0, this.mapManager.map.widthInPixels, this.mapManager.map.heightInPixels)
         this.cameras.main.startFollow(this.player).setZoom(2);
 
         // Input
@@ -87,7 +85,7 @@ export class Game extends Phaser.Scene {
 
 
     onKeyInput(event:any) {
-        let nextThing;
+        let nextThing
         // check nextThing, which player steps into
         // if there is something, then hit it
         // if there isn't thing and not collision, then walk
@@ -100,6 +98,7 @@ export class Game extends Phaser.Scene {
                 this.player.y -= unit
             }
         }
+
         if(event.code === "ArrowDown") {
             nextThing = this.checkEntity(this.player.x, this.player.y + unit)
 
@@ -109,6 +108,7 @@ export class Game extends Phaser.Scene {
                 this.player.y += unit
             }
         }
+
         if(event.code === "ArrowLeft") {
             nextThing = this.checkEntity(this.player.x - unit, this.player.y)
 
@@ -118,6 +118,7 @@ export class Game extends Phaser.Scene {
                 this.player.x -= unit
             }
         }
+
         if(event.code === "ArrowRight") {
             nextThing = this.checkEntity(this.player.x + unit, this.player.y)
 
@@ -127,26 +128,25 @@ export class Game extends Phaser.Scene {
                 this.player.x += unit
             }
         }
+
         console.log("x:",this.player.x, "y:",this.player.y)
         this.events.emit('moved')
 
-        console.log(this.enemiesManager.enemies)
-
         // check player life
-        if (this.player.health <= 0) {
-            this.player.alive = false
+        this.player.checkAlive()
+        if (!this.player.alive) {
             this.scene.stop()
         }
 
         // check teleports
-        let teleports = this.map.filterObjects("teleport", this.tileObjectIsTeleport)
+        // let teleports = this.mapManager.map.filterObjects("teleport", this.tileObjectIsTeleport)
 
-        for (const tp of teleports) {
-            if (this.player.x == tp.x && this.player.y == tp.y) {
-                console.log("TP MAP", this.mapName, "--->", tp.properties[0].value)
-                this.teleport(this.mapName, tp.properties[0].value)
-            }
-        }
+        // for (const tp of teleports) {
+        //     if (this.player.x == tp.x && this.player.y == tp.y) {
+        //         console.log("TP MAP", this.mapManager.mapName, "--->", tp.properties[0].value)
+        //         this.teleport(this.mapManager.mapName, tp.properties[0].value)
+        //     }
+        // }
 
     }
 
@@ -156,50 +156,28 @@ export class Game extends Phaser.Scene {
     }
 
 
-    isSpawnOrigin(obj: any) {
-        return obj.name === "spawn_origin"
-    }
+    // isSpawnOrigin(obj: any) {
+    //     return obj.name === "spawn_origin"
+    // }
 
 
     hit(attacker:any, victim:any) {
         console.log("HIT!")
-        // this.enemy.health--
-        // if (this.enemy.health <= 0) {
-        //     this.enemy.destroy()
-        //     this.enemy = null
-        // }
         victim.health--
         if (victim.health <= 0) {
             this.enemiesManager.removeEnemy(victim)
-            victim.destroy()
-            victim = null
+            attacker.exp += victim.exp
         }
     }
 
 
     checkEntity(x:number, y:number) {
-        // if (this.enemy == null) {
-        //     return null
-        // }
-        // if (this.enemy.x == x && this.enemy.y == y) {
-        //     return this.enemy
-        // }
-
         return this.enemiesManager.getEnemyAt(x, y)
-
-        // for (let enemy of this.enemies) {
-        //     if (enemy == null) {
-        //         return null
-        //     }
-        //     if (enemy.x == x && enemy.y == y) {
-        //         return enemy
-        //     }
-        // }
     }
 
 
     mapCollides(x:number, y:number) {
-        let tile = this.map.getTileAtWorldXY(x, y, false, this.cameras.main, this.layerWalls);
+        let tile = this.mapManager.map.getTileAtWorldXY(x, y, false, this.cameras.main, this.mapManager.layerWalls);
 
         // console.log(tile)
         if (tile == null) {
@@ -212,47 +190,42 @@ export class Game extends Phaser.Scene {
     }
 
 
-    makeMap(name: string) {
-        this.map = this.make.tilemap({ key: name })
-    }
+    // makeMap(name: string) {
+    //     this.map = this.make.tilemap({ key: name })
+    // }
 
 
-    teleport(oldMapName:string, newMapName:string) {
-        this.map.destroy()
-        this.player.destroy()
-        this.makeMap(newMapName)
-        this.mapName = newMapName
-        this.player.x = this.map.getObjectLayer('spawn').objects[0].x
-        this.player.y = this.map.getObjectLayer('spawn').objects[0].y
+    // teleport(oldMapName:string, newMapName:string) {
+    //     this.map.destroy()
+    //     this.player.destroy()
+    //     this.makeMap(newMapName)
+    //     this.mapName = newMapName
+    //     this.player.x = this.map.getObjectLayer('spawn').objects[0].x
+    //     this.player.y = this.map.getObjectLayer('spawn').objects[0].y
 
-        // Layers
-        this.layerFloor = this.map.createStaticLayer('floor', this.tiles)
-        this.layerWalls = this.map.createStaticLayer('walls', this.tiles)
+    //     // Layers
+    //     this.layerFloor = this.map.createStaticLayer('floor', this.tiles)
+    //     this.layerWalls = this.map.createStaticLayer('walls', this.tiles)
 
-        // Objects from object layers
-        this.objSpawn = this.map.getObjectLayer('spawn')
-        this.objTelep = this.map.getObjectLayer('teleport')
+    //     // Objects from object layers
+    //     this.objSpawn = this.map.getObjectLayer('spawn')
+    //     this.objTelep = this.map.getObjectLayer('teleport')
 
-        // Player
-        console.log(oldMapName);
-        let spawnPoint = this.map.findObject("spawn", (obj: any) => obj.properties[0].value == oldMapName)
+    //     // Player
+    //     console.log(oldMapName);
+    //     let spawnPoint = this.map.findObject("spawn", (obj: any) => obj.properties[0].value == oldMapName)
         
-        this.player = new Player(this, spawnPoint.x, spawnPoint.y)
-        this.add.existing(this.player)
+    //     this.player = new Player(this, spawnPoint.x, spawnPoint.y)
+    //     this.add.existing(this.player)
 
-        // Enemies
-        // this.enemies = [new Enemy(this, 32, 32), new Enemy(this, 64, 64)]
-        // this.createEnemies(this.enemies)
+    //     // Enemies
+    //     this.enemiesManager.createEnemies()
 
-        // Camera
-        this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels)
-        this.cameras.main.startFollow(this.player)
-    }
-
-
-    
+    //     // Camera
+    //     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels)
+    //     this.cameras.main.startFollow(this.player)
+    // }
 
 
-    debug() {
-    }
+    debug() {}
 }

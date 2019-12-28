@@ -1,4 +1,4 @@
-import { Enemy } from "../Enemy";
+import { Enemy } from "./Enemy";
 
 
 export class EnemiesManager {
@@ -34,6 +34,7 @@ export class EnemiesManager {
         }
         return null
     }
+    
 
     removeEnemy(enemy:Enemy) {
         const index = this.enemies.indexOf(enemy, 0);
@@ -43,8 +44,15 @@ export class EnemiesManager {
 
         this.enemies = this.enemies.filter(obj => obj !== enemy)
 
+        enemy.destroy()
     }
 
-    
+
+    generateEnemy() {
+        // generate enemy in bounds of map
+        // there can't be another enemy in place
+        // and there can't be wall in place   
+    }
+
 
 }
